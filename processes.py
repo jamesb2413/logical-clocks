@@ -65,29 +65,28 @@ def machine(config):
     prod_thread = Thread(target=producer, args=(config[2],))
     prod_thread.start()
  
-    while True:
-        code = random.randint(1,3)
-        localHost= "127.0.0.1"
-        
-        if __name__ == '__main__':
-            port1 = 2056
-            port2 = 3056
-            port3 = 4056
- 
+while True:
+    code = random.randint(1,3)
+    localHost= "127.0.0.1"
+    
+if __name__ == '__main__':
+    port1 = 2056
+    port2 = 3056
+    port3 = 4056
 
-            config1=[localHost, port1, port2,]
-            p1 = Process(target=machine, args=(config1,))
-            config2=[localHost, port2, port3]
-            p2 = Process(target=machine, args=(config2,))
-            config3=[localHost, port3, port1]
-            p3 = Process(target=machine, args=(config3,))
- 
 
-            p1.start()
-            p2.start()
-            p3.start()
-            
+    config1=[localHost, port1, port2,]
+    p1 = Process(target=machine, args=(config1,))
+    config2=[localHost, port2, port3]
+    p2 = Process(target=machine, args=(config2,))
+    config3=[localHost, port3, port1]
+    p3 = Process(target=machine, args=(config3,))
 
-            p1.join()
-            p2.join()
-            p3.join()
+
+    p1.start()
+    p2.start()
+    p3.start()
+
+p1.join()
+p2.join()
+p3.join()
