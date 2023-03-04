@@ -65,9 +65,10 @@ def machine(config):
     prod_thread = Thread(target=producer, args=(config[2],))
     prod_thread.start()
  
-while True:
-    code = random.randint(1,3)
-    localHost= "127.0.0.1"
+    while True:
+        code = random.randint(1,3)
+        
+localHost= "127.0.0.1"
     
 if __name__ == '__main__':
     port1 = 2056
