@@ -9,8 +9,14 @@ import random
 import queue
 from datetime import datetime
 from pytz import timezone
-import xlsxwriter
+from csv import writer
  
+def write_data(pid, data):
+    filename = str(pid) + "_log.csv"
+    with open(filename, 'a') as log:
+        writer_object = writer(log)
+        writer_object.writerow(data)
+        log.close()
 
 def consumer(conn):
     print("consumer accepted connection" + str(conn)+"\n")
@@ -46,18 +52,21 @@ def producer(portVal1, portVal2):
             elif code == 1:
                 # send to one of the other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
+                write_data(str(os.getpid()), ["Send", str(time.time()), "0", str(log_clock)])
                 msg = str(log_clock)
                 print("Client-side connection success to port val:" + str(portVal1) + "\n")
                 s1.send(msg.encode('ascii'))
             elif code == 2:
                 # send to other machine a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
+                write_data(str(os.getpid()), ["Send", str(time.time()), "0", str(log_clock)])
                 msg = str(log_clock)
                 print("Client-side connection success to port val:" + str(portVal2) + "\n")
                 s2.send(msg.encode('ascii'))
             elif code == 3:
                 # send to both other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
+                write_data(str(os.getpid()), ["Send", str(time.time()), "0", str(log_clock)])
                 msg = str(log_clock)
                 print("Client-side connection success to port val:" + str(portVal1) + "\n")
                 print("Client-side connection success to port val:" + str(portVal2) + "\n")
@@ -66,6 +75,7 @@ def producer(portVal1, portVal2):
             else:
                 # treat the cycle as an internal event; 
                 # log the internal event, the system time, and the logical clock value.
+                write_data(str(os.getpid()), ["Internal", str(time.time()), "0", str(log_clock)])
                 pass
             last_tick = log_clock
 
@@ -74,12 +84,11 @@ def producer(portVal1, portVal2):
 
 # initializes log file for each process (requires 'pip install xlsxwriter')
 def init_log(filename):
-    workbook = xlsxwriter.Workbook(filename)
-    worksheet = workbook.add_worksheet("logInfo")
-    worksheet.write(0, 0, "Event Type")
-    worksheet.write(0, 1, "Global Time")
-    worksheet.write(0, 2, "Queue Length")
-    worksheet.write(0, 3, "Logical Clock Time")
+    column_titles = ["Event Type", "Global Time", "Queue Length", "Logical Clock Time"]
+    with open(filename, 'a') as log:
+        writer_object = writer(log)
+        writer_object.writerow(column_titles)
+        log.close()
  
 # Initialize server at sPort
 def init_machine(config):
@@ -87,9 +96,9 @@ def init_machine(config):
     PORT = int(config[1])
     pid = str(config[3])
 
-    # # create log file
-    # filename = pid + "_log.xlsx"
-    # init_log(filename)
+    # create log file
+    filename = pid + "_log.csv"
+    init_log(filename)
 
 
     print("starting server| port val:", PORT)
@@ -132,6 +141,7 @@ def machine(config):
             log_clock = max(log_clock, msg_T)
             global_time = datetime.now(timezone('EST'))
             # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
+            write_data(str(os.getpid()), ["Recv", str(time.time()), str(len(net_q)), str(log_clock)])
         # If queue is empty
         except:
             code = random.randint(1,10)
