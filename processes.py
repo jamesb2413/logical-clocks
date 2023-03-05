@@ -21,7 +21,7 @@ def consumer(conn):
         # print("msg received\n")
         dataVal = data.decode('ascii')
         print("msg received:", dataVal)
-        net_q.append(dataVal)
+        net_q.append(int(dataVal))
  
 
 def producer(portVal1, portVal2):
@@ -46,19 +46,19 @@ def producer(portVal1, portVal2):
             elif code == 1:
                 # send to one of the other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
-                msg = "hello"
+                msg = str(log_clock)
                 print("Client-side connection success to port val:" + str(portVal1) + "\n")
                 s1.send(msg.encode('ascii'))
             elif code == 2:
                 # send to other machine a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
-                msg = "hello"
+                msg = str(log_clock)
                 print("Client-side connection success to port val:" + str(portVal2) + "\n")
                 s2.send(msg.encode('ascii'))
             elif code == 3:
                 # send to both other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
-                msg = "hello"
+                msg = str(log_clock)
                 print("Client-side connection success to port val:" + str(portVal1) + "\n")
                 print("Client-side connection success to port val:" + str(portVal2) + "\n")
                 s1.send(msg.encode('ascii'))
@@ -106,6 +106,7 @@ def machine(config):
     config.append(os.getpid())
     interval = 1.0 / random.randint(1,6)
     global net_q
+    # Queue of messages containing timestamp values
     net_q = queue.Queue()
     global code
     code = -1
@@ -114,19 +115,21 @@ def machine(config):
     print(config)
     init_thread = Thread(target=init_machine, args=(config))
     init_thread.start()
-    #add delay to initialize the server-side logic on all processes
+    # add delay to initialize the server-side logic on all processes
     time.sleep(5)
     # extensible to multiple producers
     prod_thread = Thread(target=producer, args=(config[2],config[3]))
     prod_thread.start()
     # Run clock cycles
-    starttime = time.time()
+    global START_TIME 
+    START_TIME = time.time()
     while True:
-        time.sleep(interval - ((time.time() - starttime) % interval))
+        time.sleep(interval - ((time.time() - START_TIME) % interval))
         # Update the local logical clock.
         log_clock += 1
         try:
-            msg = net_q.get()
+            msg_T = net_q.get()
+            log_clock = max(log_clock, msg_T)
             global_time = datetime.now(timezone('EST'))
             # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
         # If queue is empty
