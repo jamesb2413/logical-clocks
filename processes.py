@@ -103,7 +103,7 @@ def machine(config):
     # Initialize machine
     pid = os.getpid()
     # create log file
-    filename = pid + "_log.xlsx"
+    filename = str(pid) + "_log.csv"
     init_log(filename)
 
     interval = 1.0 / random.randint(1,6)
@@ -115,12 +115,12 @@ def machine(config):
     global log_clock
     log_clock = 0
     print(config)
-    init_thread = Thread(target=init_machine, args=(config))
+    init_thread = Thread(target=init_machine, args=(config,))
     init_thread.start()
     # add delay to initialize the server-side logic on all processes
     time.sleep(5)
     # extensible to multiple producers
-    prod_thread = Thread(target=producer, args=(pid, config[2],config[3]))
+    prod_thread = Thread(target=producer, args=(pid, config[2], config[3]))
     prod_thread.start()
     # Run clock cycles
     global START_TIME 
