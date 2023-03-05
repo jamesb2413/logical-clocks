@@ -20,7 +20,7 @@ def write_data(pid, data):
 
 def consumer(conn):
     print("consumer accepted connection" + str(conn)+"\n")
-    sleepVal = 0.900
+    sleepVal = 0.0
     while True:
         time.sleep(sleepVal)
         data = conn.recv(1024)
@@ -36,7 +36,7 @@ def producer(pid, portVal1, portVal2):
     port2 = int(portVal2)
     s1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    sleepVal = 0.500
+    sleepVal = 0.0
     #sema acquire
     try:
         s1.connect((host,port1))
@@ -122,9 +122,9 @@ def machine(config):
     # extensible to multiple producers
     prod_thread = Thread(target=producer, args=(pid, config[2], config[3]))
     prod_thread.start()
-    # Run clock cycles
     global START_TIME 
     START_TIME = time.time()
+    # Run clock cycles
     while True:
         time.sleep(interval - ((time.time() - START_TIME) % interval))
         # Update the local logical clock.
@@ -147,6 +147,8 @@ if __name__ == '__main__':
     port2 = 3056
     port3 = 4056
 
+ 
+    start_time = time.time()
 
     config1=[localHost, port1, port2, port3]
     p1 = Process(target=machine, args=(config1,))
@@ -158,6 +160,14 @@ if __name__ == '__main__':
     p1.start()
     p2.start()
     p3.start()
+
+    while True:
+        if time.time() - start_time > 30.0:
+            p1.terminate()
+            p2.terminate()
+            p3.terminate()
+            print("killed")
+            break
 
     p1.join()
     p2.join()
