@@ -12,22 +12,20 @@ from pytz import timezone
 from csv import writer
  
 def write_data(pid, data):
-    filename = str(pid) + "_log.csv"
+    filename = pid + "_log.csv"
     with open(filename, 'a') as log:
         writer_object = writer(log)
         writer_object.writerow(data)
         log.close()
 
 def consumer(conn):
-    print("consumer accepted connection" + str(conn)+"\n")
     sleepVal = 0.0
     while True:
         time.sleep(sleepVal)
         data = conn.recv(1024)
         # print("msg received\n")
         dataVal = data.decode('ascii')
-        print("msg received:", dataVal)
-        net_q.append(int(dataVal))
+        net_q.put(int(dataVal))
  
 
 def producer(pid, portVal1, portVal2):
@@ -37,42 +35,39 @@ def producer(pid, portVal1, portVal2):
     s1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sleepVal = 0.0
+    global code
     #sema acquire
     try:
         s1.connect((host,port1))
         s2.connect((host,port2))
-        last_tick = log_clock
         while True:
-            # Block until next logical clock cycle
-            while last_tick == log_clock:
+            # Block while queue is not empty
+            while code == -1:
                 continue
-            # If code not set because queue is not empty
-            if code == -1:
-                continue
-            elif code == 1:
+            if code == 1:
                 # send to one of the other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
                 msg = str(log_clock)
-                write_data(str(pid), ["Send to one", str(time.time() - START_TIME), "0", msg])
+                write_data(pid, ["Send to one", str(time.time() - START_TIME), "0", msg])
                 s1.send(msg.encode('ascii'))
             elif code == 2:
                 # send to other machine a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
                 msg = str(log_clock)
-                write_data(str(pid), ["Send to other", str(time.time() - START_TIME), "0", msg])
+                write_data(pid, ["Send to other", str(time.time() - START_TIME), "0", msg])
                 s2.send(msg.encode('ascii'))
             elif code == 3:
                 # send to both other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
                 msg = str(log_clock)
-                write_data(str(pid), ["Send to both", str(time.time() - START_TIME), "0", msg])
+                write_data(pid, ["Send to both", str(time.time() - START_TIME), "0", msg])
                 s1.send(msg.encode('ascii'))
                 s2.send(msg.encode('ascii'))
             else:
                 # treat the cycle as an internal event; 
                 # log the internal event, the system time, and the logical clock value.
-                write_data(str(pid), ["Internal", str(time.time() - START_TIME), "0", str(log_clock)])
-            last_tick = log_clock
+                write_data(pid, ["Internal", str(time.time() - START_TIME), "0", str(log_clock)])
+            code = -1
 
     except socket.error as e:
         print ("Error connecting producer: %s" % e)
@@ -90,7 +85,6 @@ def init_machine(config):
     HOST = str(config[0])
     PORT = int(config[1])
 
-    print("starting server| port val:", PORT)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
     s.listen()
@@ -101,12 +95,19 @@ def init_machine(config):
 # config: [localHost, conPort, prodPort1, prodPort2]
 def machine(config):
     # Initialize machine
-    pid = os.getpid()
+    conPort = config[1]
+    if conPort == 2056:
+        pid = '1'
+    elif conPort == 3056:
+        pid = '2'
+    else:
+        pid = '3' 
+    clock_rate = random.randint(1,6)
+    pid += '_' + str(clock_rate)
     # create log file
-    filename = str(pid) + "_log.csv"
+    filename = pid + "_log.csv"
     init_log(filename)
 
-    interval = 1.0 / random.randint(1,6)
     global net_q
     # Queue of messages containing timestamp values
     net_q = queue.Queue()
@@ -114,31 +115,40 @@ def machine(config):
     code = -1
     global log_clock
     log_clock = 0
-    print(config)
     init_thread = Thread(target=init_machine, args=(config,))
     init_thread.start()
     # add delay to initialize the server-side logic on all processes
-    time.sleep(5)
+    time.sleep(2)
     # extensible to multiple producers
     prod_thread = Thread(target=producer, args=(pid, config[2], config[3]))
     prod_thread.start()
+    time.sleep(2)
     global START_TIME 
     START_TIME = time.time()
     # Run clock cycles
     while True:
-        time.sleep(interval - ((time.time() - START_TIME) % interval))
-        # Update the local logical clock.
-        log_clock += 1
-        try:
-            msg_T = net_q.get()
-            log_clock = max(log_clock, msg_T)
-            global_time = datetime.now(timezone('EST'))
-            # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
-            write_data(str(pid), ["Recv", str(time.time() - START_TIME), str(len(net_q)), str(log_clock)])
-        # If queue is empty
-        except:
-            code = random.randint(1,10)
-
+        loop_start = time.time()
+        print("-----------")
+        print("pid", pid)
+        for i in range(clock_rate):
+            # Update the local logical clock.
+            log_clock += 1
+            if not net_q.empty():
+                msg_T = net_q.get(False)
+                print("msg_t", msg_T)
+                log_clock = max(log_clock, msg_T)
+                # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
+                write_data(pid, ["Recv", str(time.time() - START_TIME), str(net_q.qsize()), str(log_clock)])
+            # If queue is empty
+            else:
+                print("empty queue")
+                code = random.randint(1,10)
+                # Block until log
+                while code != -1:
+                    continue
+        print("-----------")
+        loop_end = time.time()
+        time.sleep(1.0 - (loop_end - loop_start))
 
 localHost= "127.0.0.1"
     
