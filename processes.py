@@ -30,7 +30,7 @@ def consumer(conn):
         net_q.append(int(dataVal))
  
 
-def producer(portVal1, portVal2):
+def producer(pid, portVal1, portVal2):
     host= "127.0.0.1"
     port1 = int(portVal1)
     port2 = int(portVal2)
@@ -52,31 +52,26 @@ def producer(portVal1, portVal2):
             elif code == 1:
                 # send to one of the other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
-                write_data(str(os.getpid()), ["Send", str(time.time()), "0", str(log_clock)])
                 msg = str(log_clock)
-                print("Client-side connection success to port val:" + str(portVal1) + "\n")
+                write_data(str(pid), ["Send to one", str(time.time() - START_TIME), "0", msg])
                 s1.send(msg.encode('ascii'))
             elif code == 2:
                 # send to other machine a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
-                write_data(str(os.getpid()), ["Send", str(time.time()), "0", str(log_clock)])
                 msg = str(log_clock)
-                print("Client-side connection success to port val:" + str(portVal2) + "\n")
+                write_data(str(pid), ["Send to other", str(time.time() - START_TIME), "0", msg])
                 s2.send(msg.encode('ascii'))
             elif code == 3:
                 # send to both other machines a message that is the local logical clock time, 
                 # update the log with the send, the system time, and the logical clock time
-                write_data(str(os.getpid()), ["Send", str(time.time()), "0", str(log_clock)])
                 msg = str(log_clock)
-                print("Client-side connection success to port val:" + str(portVal1) + "\n")
-                print("Client-side connection success to port val:" + str(portVal2) + "\n")
+                write_data(str(pid), ["Send to both", str(time.time() - START_TIME), "0", msg])
                 s1.send(msg.encode('ascii'))
                 s2.send(msg.encode('ascii'))
             else:
                 # treat the cycle as an internal event; 
                 # log the internal event, the system time, and the logical clock value.
-                write_data(str(os.getpid()), ["Internal", str(time.time()), "0", str(log_clock)])
-                pass
+                write_data(str(pid), ["Internal", str(time.time() - START_TIME), "0", str(log_clock)])
             last_tick = log_clock
 
     except socket.error as e:
@@ -94,12 +89,6 @@ def init_log(filename):
 def init_machine(config):
     HOST = str(config[0])
     PORT = int(config[1])
-    pid = str(config[3])
-
-    # create log file
-    filename = pid + "_log.csv"
-    init_log(filename)
-
 
     print("starting server| port val:", PORT)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -109,10 +98,14 @@ def init_machine(config):
         conn, addr = s.accept()
         start_new_thread(consumer, (conn,))
  
-# config: [localHost, sPort, cPort, pid]
+# config: [localHost, conPort, prodPort1, prodPort2]
 def machine(config):
     # Initialize machine
-    config.append(os.getpid())
+    pid = os.getpid()
+    # create log file
+    filename = pid + "_log.xlsx"
+    init_log(filename)
+
     interval = 1.0 / random.randint(1,6)
     global net_q
     # Queue of messages containing timestamp values
@@ -127,7 +120,7 @@ def machine(config):
     # add delay to initialize the server-side logic on all processes
     time.sleep(5)
     # extensible to multiple producers
-    prod_thread = Thread(target=producer, args=(config[2],config[3]))
+    prod_thread = Thread(target=producer, args=(pid, config[2],config[3]))
     prod_thread.start()
     # Run clock cycles
     global START_TIME 
@@ -141,7 +134,7 @@ def machine(config):
             log_clock = max(log_clock, msg_T)
             global_time = datetime.now(timezone('EST'))
             # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
-            write_data(str(os.getpid()), ["Recv", str(time.time()), str(len(net_q)), str(log_clock)])
+            write_data(str(pid), ["Recv", str(time.time() - START_TIME), str(len(net_q)), str(log_clock)])
         # If queue is empty
         except:
             code = random.randint(1,10)
