@@ -9,6 +9,7 @@ import random
 import queue
 from datetime import datetime
 from pytz import timezone
+import xlsxwriter
  
 
 def consumer(conn):
@@ -70,11 +71,27 @@ def producer(portVal1, portVal2):
 
     except socket.error as e:
         print ("Error connecting producer: %s" % e)
+
+# initializes log file for each process (requires 'pip install xlsxwriter')
+def init_log(filename):
+    workbook = xlsxwriter.Workbook(filename)
+    worksheet = workbook.add_worksheet("logInfo")
+    worksheet.write(0, 0, "Event Type")
+    worksheet.write(0, 1, "Global Time")
+    worksheet.write(0, 2, "Queue Length")
+    worksheet.write(0, 3, "Logical Clock Time")
  
 # Initialize server at sPort
 def init_machine(config):
     HOST = str(config[0])
     PORT = int(config[1])
+    pid = str(config[3])
+
+    # # create log file
+    # filename = pid + "_log.xlsx"
+    # init_log(filename)
+
+
     print("starting server| port val:", PORT)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
