@@ -34,26 +34,29 @@ def producer(portVal1, portVal2):
     try:
         s1.connect((host,port1))
         s2.connect((host,port2))
+        last_tick = log_clock
         while True:
-            time.sleep(sleepVal)
+            # Block until next logical clock cycle
+            while last_tick == log_clock:
+                continue
             # If code not set because queue is not empty
             if code == -1:
                 continue
             elif code == 1:
                 # send to one of the other machines a message that is the local logical clock time, 
-                # update it’s own logical clock, and update the log with the send, the system time, and the logical clock time
+                # update the log with the send, the system time, and the logical clock time
                 msg = "hello"
                 print("Client-side connection success to port val:" + str(portVal1) + "\n")
                 s1.send(msg.encode('ascii'))
             elif code == 2:
                 # send to other machine a message that is the local logical clock time, 
-                # update it’s own logical clock, and update the log with the send, the system time, and the logical clock time
+                # update the log with the send, the system time, and the logical clock time
                 msg = "hello"
                 print("Client-side connection success to port val:" + str(portVal2) + "\n")
                 s2.send(msg.encode('ascii'))
             elif code == 3:
                 # send to both other machines a message that is the local logical clock time, 
-                # update it’s own logical clock, and update the log with the send, the system time, and the logical clock time
+                # update the log with the send, the system time, and the logical clock time
                 msg = "hello"
                 print("Client-side connection success to port val:" + str(portVal1) + "\n")
                 print("Client-side connection success to port val:" + str(portVal2) + "\n")
@@ -61,8 +64,9 @@ def producer(portVal1, portVal2):
                 s2.send(msg.encode('ascii'))
             else:
                 # treat the cycle as an internal event; 
-                # update the local logical clock, and log the internal event, the system time, and the logical clock value.
+                # log the internal event, the system time, and the logical clock value.
                 pass
+            last_tick = log_clock
 
     except socket.error as e:
         print ("Error connecting producer: %s" % e)
@@ -88,6 +92,8 @@ def machine(config):
     net_q = queue.Queue()
     global code
     code = -1
+    global log_clock
+    log_clock = 0
     print(config)
     init_thread = Thread(target=init_machine, args=(config))
     init_thread.start()
@@ -99,17 +105,16 @@ def machine(config):
     # Run clock cycles
     starttime = time.time()
     while True:
-        # run every interval s
         time.sleep(interval - ((time.time() - starttime) % interval))
+        # Update the local logical clock.
+        log_clock += 1
         try:
             msg = net_q.get()
             global_time = datetime.now(timezone('EST'))
-            # Update the local logical clock.
             # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
         # If queue is empty
         except:
             code = random.randint(1,10)
-            if code == 1:
 
 
 localHost= "127.0.0.1"
