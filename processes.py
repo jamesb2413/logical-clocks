@@ -127,26 +127,46 @@ def machine(config):
     START_TIME = time.time()
     # Run clock cycles
     while True:
-        loop_start = time.time()
+        # if conPort == 2056:
+        #     print("-----------")
+        # elif conPort == 3056:
+        #     print("~~~~~~~~~~~")
+        # else:
+        #     print(">>>>>>>>>>>")
         for i in range(clock_rate):
             # Update the local logical clock.
             log_clock += 1
             if not net_q.empty():
                 msg_T = net_q.get(False)
-                print("msg_t", msg_T)
-                log_clock = max(log_clock, msg_T)
+                # if conPort == 2056:
+                #     print("-msg_t", msg_T)
+                # elif conPort == 3056:
+                #     print("~msg_t", msg_T)
+                # else:
+                #     print(">msg_t", msg_T)
+                log_clock = max(log_clock, msg_T + 1)
                 # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
                 write_data(pid, ["Recv", str(time.time() - START_TIME), str(net_q.qsize()), str(log_clock)])
             # If queue is empty
             else:
-                print("empty queue")
+                # if conPort == 2056:
+                #     print("-empty")
+                # elif conPort == 3056:
+                #     print("~empty")
+                # else:
+                #     print(">empty")
                 code = random.randint(1,10)
                 # Block until log
                 while code != -1:
                     continue
-        loop_end = time.time()
+        # if conPort == 2056:
+        #     print("-----------")
+        # elif conPort == 3056:
+        #     print("~~~~~~~~~~~")
+        # else:
+        #     print(">>>>>>>>>>>")
         # Goal: No time leakage. Exactly 1 second between first event of one loop and first event of next loop.
-        time.sleep(1.0 - (loop_end - loop_start) - ((loop_start - START_TIME) % 1.0))
+        time.sleep(1.0 - ((time.time() - START_TIME) % 1.0))
 
 localHost= "127.0.0.1"
     

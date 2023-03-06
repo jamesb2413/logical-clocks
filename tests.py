@@ -123,7 +123,6 @@ def machine(config):
     START_TIME = time.time()
     # Run clock cycles
     while True:
-        loop_start = time.time()
         if conPort == 2056:
             print("-----------")
         else:
@@ -137,7 +136,7 @@ def machine(config):
                     print("-msg_t", msg_T)
                 else:
                     print("~msg_t", msg_T)
-                log_clock = max(log_clock, msg_T)
+                log_clock = max(log_clock, msg_T + 1)
                 # Write in the log that it received a message, the global time, the length of the message queue, and the logical clock time.
                 write_data(pid, ["Recv", str(time.time() - START_TIME), str(net_q.qsize()), str(log_clock)])
             # If queue is empty
@@ -154,9 +153,8 @@ def machine(config):
             print("-----------")
         else:
             print("~~~~~~~~~~~")
-        loop_end = time.time()
         # Goal: No time leakage. Exactly 1 second between first event of one loop and first event of next loop.
-        time.sleep(1.0 - (loop_end - loop_start) - ((loop_start - START_TIME) % 1.0))
+        time.sleep(1.0 - ((time.time() - START_TIME) % 1.0))
     
 if __name__ == '__main__':
     port1 = 2056
