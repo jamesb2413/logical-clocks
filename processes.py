@@ -128,8 +128,6 @@ def machine(config):
     # Run clock cycles
     while True:
         loop_start = time.time()
-        print("-----------")
-        print("pid", pid)
         for i in range(clock_rate):
             # Update the local logical clock.
             log_clock += 1
@@ -146,9 +144,9 @@ def machine(config):
                 # Block until log
                 while code != -1:
                     continue
-        print("-----------")
         loop_end = time.time()
-        time.sleep(1.0 - (loop_end - loop_start))
+        # Goal: No time leakage. Exactly 1 second between first event of one loop and first event of next loop.
+        time.sleep(1.0 - (loop_end - loop_start) - ((loop_start - START_TIME) % 1.0))
 
 localHost= "127.0.0.1"
     
