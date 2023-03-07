@@ -12,7 +12,7 @@ from pytz import timezone
 
 import helpers
 
-def consumer(conn):
+def consumer(conn, net_q):
     sleepVal = 0.0
     while True:
         time.sleep(sleepVal)
@@ -66,8 +66,8 @@ def producer(log, portVal1, portVal2):
     except socket.error as e:
         print ("Error connecting producer: %s" % e)
  
-# Initialize server at sPort
-def init_server(config):
+# Initialize server and consumers at sPort
+def init_server(config, net_q):
     HOST = str(config[0])
     PORT = int(config[1])
 
@@ -76,7 +76,7 @@ def init_server(config):
     s.listen()
     while True:
         conn, addr = s.accept()
-        start_new_thread(consumer, (conn,))
+        start_new_thread(consumer, (conn, net_q))
  
 # config: [localHost, conPort, prodPort1, prodPort2]
 def machine(config, portDict):
@@ -84,14 +84,13 @@ def machine(config, portDict):
     conPort = config[1]
     log, clock_rate = helpers.init_log(conPort, portDict)
 
-    global net_q
     # Queue of messages containing timestamp values
     net_q = queue.Queue()
     global code
     code = -1
     global log_clock
     log_clock = 0
-    init_thread = Thread(target=init_server, args=(config,))
+    init_thread = Thread(target=init_server, args=(config, net_q))
     init_thread.start()
     # add delay to initialize the server-side logic on all processes
     time.sleep(2)
