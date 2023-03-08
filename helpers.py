@@ -7,6 +7,7 @@ def write_data(filename, data):
         writer_object = writer(log)
         writer_object.writerow(data)
         log.close()
+    return data
 
 # Initializes log file for each process and returns (log file title '<simple_pid>_<clock_rate>_log.csv', clock_rate) pair,
 # where simple_pid \in {1, 2, 3}. (requires 'pip install xlsxwriter')
