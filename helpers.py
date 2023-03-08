@@ -10,7 +10,7 @@ def write_data(filename, data):
     return data
 
 # Initializes log file for each process and returns (log file title '<simple_pid>_<clock_rate>_log.csv', clock_rate) pair,
-# where simple_pid \in {1, 2, 3}. (requires 'pip install xlsxwriter')
+# where simple_pid \in {1, 2, 3}.
 def init_log(conPort, portDict):
     if conPort == portDict['port1']:
         simple_pid = '1'
