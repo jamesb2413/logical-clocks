@@ -53,6 +53,7 @@ coverage.xml
 
 # Data files
 *.xlsx
+*.csv
 
 # Translations
 *.mo
