@@ -7,8 +7,6 @@ import random
 import time
 from threading import Thread
 import queue
-from datetime import datetime
-from pytz import timezone
 
 import helpers
 
