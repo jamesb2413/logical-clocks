@@ -1,5 +1,5 @@
 # logical-clocks
-A model of a small, asynchronous distributed system with different machines running at different and independent speeds. See Lamport 1978 Time, Clocks, and the Ordering of Events in a Distributed System.
+A model of a small, asynchronous distributed system with different machines running at different and independent speeds. See Lamport: Time, Clocks, and the Ordering of Events in a Distributed System (1978).
 
 The program runs 3 processes to model separate machines. Each process runs at a clock rate in [1,6] determined randomly during initialization. The clock rate determines the number of communication events that can happen within one second on that machine. 
 
